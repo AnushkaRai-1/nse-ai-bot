@@ -70,3 +70,22 @@ Constraints
     No real money trading (advisory only)
     Strict dependency and security rules
     No floating-point math for money
+
+
+Folder Structure:
+
+    sentinelquant/
+        ├── app/
+        │   ├── api/
+        │   ├── core/
+        │   ├── models/
+        │   ├── security/
+        │   └── main.py
+        ├── scripts/
+        ├── tests/
+        ├── docker/
+        ├── .gitignore
+        ├── Dockerfile
+        ├── docker-compose.yml
+        ├── README.md
+
