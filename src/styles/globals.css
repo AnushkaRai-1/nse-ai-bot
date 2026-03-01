@@ -1,0 +1,337 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* Pastel-based intelligence color system */
+  --background: #0d1117;
+  --background-elevated: #161b22;
+  --foreground: #e6edf3;
+  
+  /* Primary - Light Blue (Intelligence, Active States) */
+  --primary: #7dd3fc;
+  --primary-muted: #bae6fd;
+  --primary-glow: rgba(125, 211, 252, 0.2);
+  
+  /* Signal - Soft Yellow/Amber (Alerts, Confidence) */
+  --signal: #fef08a;
+  --signal-muted: #fef9c3;
+  --signal-glow: rgba(254, 240, 138, 0.15);
+  
+  /* Accents - Muted Pastels */
+  --accent-mint: #a7f3d0;
+  --accent-lavender: #ddd6fe;
+  --accent-teal: #99f6e4;
+  --accent-rose: #fecdd3;
+  
+  /* Semantic colors with pastel approach */
+  --success: #86efac;
+  --warning: #fde047;
+  --danger: #fca5a5;
+  --info: #93c5fd;
+  
+  /* Neutral with warmth */
+  --muted: #30363d;
+  --muted-foreground: #8b949e;
+  --border: rgba(139, 148, 158, 0.12);
+  
+  /* Card system with atmospheric depth */
+  --card: rgba(22, 27, 34, 0.8);
+  --card-elevated: rgba(22, 27, 34, 0.95);
+  --card-glow: rgba(125, 211, 252, 0.05);
+  
+  /* Input states */
+  --input-background: rgba(22, 27, 34, 0.5);
+  --input-border: rgba(139, 148, 158, 0.2);
+  --input-focus: var(--primary);
+  
+  /* Motion timing - physics-based */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-gentle: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  
+  /* Spacing system */
+  --spacing-base: 8px;
+  
+  /* Radius */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+}
+
+.dark {
+  --background: #0d1117;
+  --foreground: #e6edf3;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-signal: var(--signal);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-primary/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'tnum' on, 'lnum' on;
+  }
+
+  /* Add subtle grain texture for warmth */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
+/* Typography with numerical clarity */
+@layer base {
+  h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' on, 'lnum' on;
+  }
+}
+
+/* Living card system */
+.intelligence-card {
+  background: var(--card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s var(--ease-smooth);
+}
+
+.intelligence-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--card-glow), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-smooth);
+  pointer-events: none;
+}
+
+.intelligence-card:hover {
+  background: var(--card-elevated);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--primary-glow);
+}
+
+.intelligence-card:hover::before {
+  opacity: 1;
+}
+
+/* Pastel glow effects */
+.glow-primary {
+  box-shadow: 0 0 24px var(--primary-glow);
+}
+
+.glow-signal {
+  box-shadow: 0 0 24px var(--signal-glow);
+}
+
+/* Confidence indicator system */
+.confidence-bar {
+  position: relative;
+  height: 4px;
+  background: rgba(139, 148, 158, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--signal));
+  transition: width 1s var(--ease-smooth);
+  position: relative;
+}
+
+.confidence-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Horizontal scroll with atmospheric depth */
+.scroll-section {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-glow) transparent;
+  gap: 1rem;
+  padding-bottom: 1rem;
+}
+
+.scroll-section::-webkit-scrollbar {
+  height: 3px;
+}
+
+.scroll-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-section::-webkit-scrollbar-thumb {
+  background: var(--primary-glow);
+  border-radius: 2px;
+}
+
+.scroll-section > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* Pulse animation for live signals */
+@keyframes pulse-intelligence {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.pulse-live {
+  animation: pulse-intelligence 2s ease-in-out infinite;
+}
+
+/* Soft glow for pastel highlights */
+.soft-glow {
+  filter: drop-shadow(0 0 12px currentColor);
+}
+
+/* Instrument-grade inputs */
+.precision-input {
+  background: var(--input-background);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  font-variant-numeric: tabular-nums;
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.precision-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  outline: none;
+}
+
+/* State transition system */
+.state-transition {
+  transition: all 0.5s var(--ease-smooth);
+}
+
+/* Depth layers for parallax */
+.layer-background {
+  transform: translateZ(-10px) scale(1.1);
+}
+
+.layer-midground {
+  transform: translateZ(-5px) scale(1.05);
+}
+
+.layer-foreground {
+  transform: translateZ(0);
+}
+
+/* Performance optimizations */
+.will-animate {
+  will-change: transform, opacity;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Custom scrollbar for the app */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(22, 27, 34, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-glow);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Atmospheric overlay for warmth */
+.atmospheric-overlay {
+  position: relative;
+}
+
+.atmospheric-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(125, 211, 252, 0.03),
+    transparent 50%
+  ),
+  radial-gradient(
+    circle at 70% 80%,
+    rgba(254, 240, 138, 0.02),
+    transparent 50%
+  );
+  pointer-events: none;
+}
