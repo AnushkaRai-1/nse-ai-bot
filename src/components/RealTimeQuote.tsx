@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { useQuote } from '../hooks/useMarketData';
 import { AnimatedNumber } from './AnimatedNumber';

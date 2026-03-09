@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect } from 'react';
+import { motion } from "framer-motion"
 import { 
   Search, 
   SlidersHorizontal, 
@@ -10,28 +10,31 @@ import {
   TrendingUp,
   Brain
 } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { AnimatedNumber } from '../components/AnimatedNumber';
 import { IntelligenceSignal, AnalysisState } from '../components/IntelligenceSignal';
 import { HoverGlow } from '../components/ContextualPreview';
 import { InteractiveInput } from '../components/InteractiveInput';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { getBatchQuotes, getStocksList, type StockListItem } from '../services/api';
 
-// Comprehensive stock data with AI scores
-const mockStocks = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2845, change: 2.4, marketCap: 19.2, sector: 'Energy', rsi: 68, pe: 24.5, momentum: 8.2, fundamental: 7.8, signal: 'BUY' as const, aiScore: 87, volume: 2.4, volatility: 1.8 },
-  { symbol: 'TCS', name: 'Tata Consultancy Services', price: 3620, change: 1.2, marketCap: 13.2, sector: 'IT', rsi: 55, pe: 28.3, momentum: 6.5, fundamental: 8.1, signal: 'HOLD' as const, aiScore: 72, volume: 1.8, volatility: 1.2 },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 1542, change: 0.8, marketCap: 11.8, sector: 'Banking', rsi: 62, pe: 18.7, momentum: 7.8, fundamental: 8.5, signal: 'BUY' as const, aiScore: 84, volume: 3.1, volatility: 1.5 },
-  { symbol: 'INFY', name: 'Infosys', price: 1478, change: -0.5, marketCap: 6.1, sector: 'IT', rsi: 48, pe: 25.6, momentum: 6.2, fundamental: 7.9, signal: 'HOLD' as const, aiScore: 68, volume: 1.5, volatility: 1.3 },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank', price: 1024, change: -1.2, marketCap: 7.2, sector: 'Banking', rsi: 42, pe: 17.2, momentum: 4.3, fundamental: 6.8, signal: 'SELL' as const, aiScore: 58, volume: 2.2, volatility: 2.1 },
-  { symbol: 'BHARTIARTL', name: 'Bharti Airtel', price: 1156, change: 3.1, marketCap: 6.7, sector: 'Telecom', rsi: 72, pe: 32.4, momentum: 8.5, fundamental: 7.2, signal: 'BUY' as const, aiScore: 81, volume: 1.9, volatility: 1.7 },
-  { symbol: 'HINDUNILVR', name: 'Hindustan Unilever', price: 2384, change: 0.4, marketCap: 5.6, sector: 'FMCG', rsi: 58, pe: 58.7, momentum: 6.8, fundamental: 8.3, signal: 'HOLD' as const, aiScore: 75, volume: 0.9, volatility: 0.8 },
-  { symbol: 'ITC', name: 'ITC Limited', price: 442, change: 1.8, marketCap: 5.5, sector: 'FMCG', rsi: 64, pe: 26.3, momentum: 7.4, fundamental: 7.6, signal: 'BUY' as const, aiScore: 79, volume: 1.2, volatility: 1.0 },
-  { symbol: 'TATAMOTORS', name: 'Tata Motors', price: 892, change: 8.7, marketCap: 3.2, sector: 'Auto', rsi: 78, pe: 14.2, momentum: 9.1, fundamental: 6.5, signal: 'BUY' as const, aiScore: 82, volume: 4.5, volatility: 3.2 },
-  { symbol: 'ADANIENT', name: 'Adani Enterprises', price: 2845, change: 12.4, marketCap: 3.8, sector: 'Conglomerate', rsi: 85, pe: 92.1, momentum: 9.5, fundamental: 5.2, signal: 'HOLD' as const, aiScore: 65, volume: 5.2, volatility: 4.8 },
-  { symbol: 'ASIANPAINT', name: 'Asian Paints', price: 3215, change: -0.3, marketCap: 3.1, sector: 'Materials', rsi: 52, pe: 68.4, momentum: 5.8, fundamental: 8.7, signal: 'HOLD' as const, aiScore: 71, volume: 0.7, volatility: 0.9 },
-  { symbol: 'MARUTI', name: 'Maruti Suzuki', price: 12456, change: 5.8, marketCap: 3.8, sector: 'Auto', rsi: 69, pe: 28.9, momentum: 8.3, fundamental: 7.9, signal: 'BUY' as const, aiScore: 80, volume: 1.6, volatility: 1.9 },
-];
+// Stock display type (mapped from backend StockListItem)
+interface ScreenerStock {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  marketCap: string;
+  sector: string;
+  rsi: number;
+  pe: number;
+  momentum: number;
+  fundamental: number;
+  signal: 'BUY' | 'HOLD' | 'SELL';
+  aiScore: number;
+  volume: number;
+  volatility: number;
+}
 
 const AnimatedSection = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1, triggerOnce: true });
@@ -51,6 +54,40 @@ const AnimatedSection = ({ children, delay = 0 }: { children: React.ReactNode; d
 export default function StockScreener() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [stocks, setStocks] = useState<ScreenerStock[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch stocks from backend /market/stocks
+  useEffect(() => {
+    const fetchStocks = async () => {
+      setLoading(true);
+      try {
+        const { stocks: apiStocks } = await getStocksList({ limit: 200 });
+        const mapped: ScreenerStock[] = apiStocks.map(s => ({
+          symbol: s.symbol,
+          name: s.name,
+          price: s.price,
+          change: s.changePercent,
+          marketCap: s.marketCap,
+          sector: s.sector,
+          rsi: s.rsi ?? 50,
+          pe: s.pe ?? 0,
+          momentum: s.aiScore ? (s.aiScore / 10) : 5,
+          fundamental: s.fcfYield ? Math.min(s.fcfYield * 2, 10) : 5,
+          signal: s.aiDirection === 'long' ? 'BUY' as const : s.aiDirection === 'neutral' ? 'HOLD' as const : 'HOLD' as const,
+          aiScore: s.aiScore ?? 50,
+          volume: s.volume / 100000, // to lakhs
+          volatility: s.atr ? s.atr / s.price * 100 : 1.5,
+        }));
+        setStocks(mapped);
+      } catch {
+        // Keep empty on error
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStocks();
+  }, []);
   const [showFilters, setShowFilters] = useState(true);
   const [filters, setFilters] = useState({
     sector: 'all',
@@ -70,7 +107,7 @@ export default function StockScreener() {
     setSearchQuery(sanitized);
   };
 
-  const filteredStocks = mockStocks.filter(stock => {
+  const filteredStocks = stocks.filter(stock => {
     const search = sanitizeInput(searchQuery.toLowerCase());
     if (search && !stock.name.toLowerCase().includes(search) && !stock.symbol.toLowerCase().includes(search)) {
       return false;
@@ -243,7 +280,7 @@ export default function StockScreener() {
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground">
             Showing <AnimatedNumber value={filteredStocks.length} /> of{' '}
-            <AnimatedNumber value={mockStocks.length} /> stocks
+            <AnimatedNumber value={stocks.length} /> stocks
           </p>
           <div className="flex gap-2">
             <motion.div 

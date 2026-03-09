@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  SentinelQuant Daily Pipeline Scheduler
+  
+  Runs daily at 07:30 IST (02:00 UTC) — after market close + data settlement.
+  
+  Install:
+    cp com.sentinelquant.daily-pipeline.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.sentinelquant.daily-pipeline.plist
+  
+  Uninstall:
+    launchctl unload ~/Library/LaunchAgents/com.sentinelquant.daily-pipeline.plist
+    rm ~/Library/LaunchAgents/com.sentinelquant.daily-pipeline.plist
+  
+  Check status:
+    launchctl list | grep sentinelquant
+  
+  Manual trigger:
+    launchctl start com.sentinelquant.daily-pipeline
+-->
+<dict>
+    <key>Label</key>
+    <string>com.sentinelquant.daily-pipeline</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <!-- UPDATE THIS PATH to your actual project location -->
+        <string>/Users/anushkarai/Downloads/AI Market Intelligence Platform/start.sh</string>
+        <string>--pipeline</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <!-- 07:30 IST = 02:00 UTC. macOS uses local time. -->
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/anushkarai/Downloads/AI Market Intelligence Platform</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/anushkarai/Downloads/AI Market Intelligence Platform/logs/pipeline-cron.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/anushkarai/Downloads/AI Market Intelligence Platform/logs/pipeline-cron-err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin</string>
+    </dict>
+
+    <!-- Don't run if laptop was asleep; catch up on next wake -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>7</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+</dict>
+</plist>

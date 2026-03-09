@@ -1,0 +1,94 @@
+{
+  "large": {
+    "bucket": "large",
+    "optuna_best_sharpe": 0.9468,
+    "mean_sharpe": 1.5187,
+    "mean_win_rate": 0.537,
+    "mean_accuracy": 0.5306,
+    "mean_max_dd": -76.1079,
+    "passes_gates": false,
+    "gate_failures": [
+      "Max DD 7610.79% > 25%"
+    ],
+    "n_folds": 15,
+    "model_version": "20260306_155757",
+    "model_path": "/Users/anushkarai/Downloads/AI Market Intelligence Platform/backend/model_artifacts/xgboost/20260306_155757",
+    "importance": {
+      "rsi_14": 26,
+      "macd_signal": 13,
+      "bb_bandwidth": 24,
+      "ma200_regime": 14,
+      "adx_value": 20,
+      "atr_14": 19,
+      "fcf_yield": 0,
+      "pe_zscore": 0,
+      "de_ratio": 0,
+      "sentiment_24h": 0,
+      "sentiment_72h": 0,
+      "volume_z_3m": 4
+    },
+    "n_fold_metrics": 15
+  },
+  "mid": {
+    "bucket": "mid",
+    "optuna_best_sharpe": -0.6305,
+    "mean_sharpe": 0.9004,
+    "mean_win_rate": 0.5182,
+    "mean_accuracy": 0.5093,
+    "mean_max_dd": -36.3689,
+    "passes_gates": false,
+    "gate_failures": [
+      "Sharpe 0.90 < 1.0",
+      "Max DD 3636.89% > 25%",
+      "Win rate 51.82% < 52%"
+    ],
+    "n_folds": 15,
+    "model_version": "20260306_160051",
+    "model_path": "/Users/anushkarai/Downloads/AI Market Intelligence Platform/backend/model_artifacts/xgboost/20260306_160051",
+    "importance": {
+      "rsi_14": 244,
+      "macd_signal": 212,
+      "bb_bandwidth": 305,
+      "ma200_regime": 61,
+      "adx_value": 237,
+      "atr_14": 310,
+      "fcf_yield": 0,
+      "pe_zscore": 0,
+      "de_ratio": 0,
+      "sentiment_24h": 0,
+      "sentiment_72h": 0,
+      "volume_z_3m": 161
+    },
+    "n_fold_metrics": 15
+  },
+  "small": {
+    "bucket": "small",
+    "optuna_best_sharpe": 0.9439,
+    "mean_sharpe": 1.7324,
+    "mean_win_rate": 0.6192,
+    "mean_accuracy": 0.5435,
+    "mean_max_dd": -0.3103,
+    "passes_gates": false,
+    "gate_failures": [
+      "Max DD 31.03% > 25%"
+    ],
+    "n_folds": 15,
+    "model_version": "20260306_160127",
+    "model_path": "/Users/anushkarai/Downloads/AI Market Intelligence Platform/backend/model_artifacts/xgboost/20260306_160127",
+    "importance": {
+      "rsi_14": 17,
+      "macd_signal": 20,
+      "bb_bandwidth": 21,
+      "ma200_regime": 3,
+      "adx_value": 27,
+      "atr_14": 34,
+      "fcf_yield": 0,
+      "pe_zscore": 0,
+      "de_ratio": 0,
+      "sentiment_24h": 0,
+      "sentiment_72h": 0,
+      "volume_z_3m": 11
+    },
+    "n_fold_metrics": 15
+  }
+}

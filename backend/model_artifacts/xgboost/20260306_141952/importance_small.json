@@ -1,0 +1,14 @@
+{
+  "rsi_14": 10,
+  "macd_signal": 12,
+  "bb_bandwidth": 0,
+  "ma200_regime": 3,
+  "adx_value": 33,
+  "atr_14": 36,
+  "fcf_yield": 0,
+  "pe_zscore": 0,
+  "de_ratio": 0,
+  "sentiment_24h": 0,
+  "sentiment_72h": 0,
+  "volume_z_3m": 8
+}

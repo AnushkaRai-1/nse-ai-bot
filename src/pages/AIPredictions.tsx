@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from "framer-motion";
 import { 
   Brain, 
   TrendingUp, 
@@ -36,6 +36,7 @@ import { AnimatedNumber, LiveValue, ConfidenceIndicator } from '../components/An
 import { IntelligenceSignal, AnalysisState, IntelligenceNode } from '../components/IntelligenceSignal';
 import { ContextualPreview, HoverGlow } from '../components/ContextualPreview';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { getMarketRegime, getRecommendations, type MarketRegimeData, type Recommendation } from '../services/api';
 
 // LSTM Forecast Data - 30-day prediction
 const lstmForecast = [
@@ -61,8 +62,8 @@ const monteCarloDistribution = [
   { range: '3400-3500', frequency: 100, probability: 1.0 },
 ];
 
-// Reinforcement Learning Portfolio Recommendations
-const rlRecommendations = [
+// RL Recommendations — fallback defaults, overridden by API state
+const defaultRlRecommendations = [
   {
     symbol: 'RELIANCE',
     action: 'BUY' as const,
@@ -73,40 +74,12 @@ const rlRecommendations = [
     reasoning: 'RL agent identified positive momentum with favorable risk-reward ratio',
     stateFeatures: { momentum: 0.82, volatility: 0.28, marketRegime: 'bullish' },
   },
-  {
-    symbol: 'TCS',
-    action: 'HOLD' as const,
-    allocation: 18,
-    qValue: 6.5,
-    expectedReward: 7.1,
-    riskAdjustedReturn: 1.8,
-    reasoning: 'Current position optimal based on portfolio diversification constraints',
-    stateFeatures: { momentum: 0.65, volatility: 0.22, marketRegime: 'neutral' },
-  },
-  {
-    symbol: 'HDFCBANK',
-    action: 'BUY' as const,
-    allocation: 20,
-    qValue: 8.2,
-    expectedReward: 8.9,
-    riskAdjustedReturn: 2.1,
-    reasoning: 'Sector rotation signal detected with high Sharpe ratio potential',
-    stateFeatures: { momentum: 0.78, volatility: 0.24, marketRegime: 'bullish' },
-  },
-  {
-    symbol: 'ICICIBANK',
-    action: 'SELL' as const,
-    allocation: 0,
-    qValue: 3.8,
-    expectedReward: 4.2,
-    riskAdjustedReturn: 0.9,
-    reasoning: 'Risk-adjusted returns declining below threshold for optimal allocation',
-    stateFeatures: { momentum: 0.43, volatility: 0.35, marketRegime: 'bearish' },
-  },
 ];
 
-// Market Regime Detection Results
-const regimeHistory = [
+type RlRec = typeof defaultRlRecommendations[number];
+
+// Regime history — defaults, overridden by live data
+const defaultRegimeHistory = [
   { date: 'Week 1', bullProbability: 45, neutralProbability: 35, bearProbability: 20 },
   { date: 'Week 2', bullProbability: 52, neutralProbability: 30, bearProbability: 18 },
   { date: 'Week 3', bullProbability: 58, neutralProbability: 28, bearProbability: 14 },
@@ -180,12 +153,117 @@ export default function AIPredictions() {
   const [activeModel, setActiveModel] = useState<'lstm' | 'monteCarlo' | 'rl' | 'regime'>('lstm');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // Live state from backend APIs
+  const [liveRlRecs, setLiveRlRecs] = useState<RlRec[]>(defaultRlRecommendations);
+  const [regimeHistory, setRegimeHistory] = useState(defaultRegimeHistory);
+  const [regimeLabel, setRegimeLabel] = useState('Bullish');
+  const [regimeConfidence, setRegimeConfidence] = useState(72);
+  const [bullProb, setBullProb] = useState(72);
+  const [neutralProb, setNeutralProb] = useState(20);
+  const [bearProb, setBearProb] = useState(8);
+  const [liveModelMetrics, setLiveModelMetrics] = useState(modelMetrics);
+
   useEffect(() => {
     // Simulate model loading
     setIsAnalyzing(true);
     const timer = setTimeout(() => setIsAnalyzing(false), 1500);
     return () => clearTimeout(timer);
   }, [activeModel]);
+
+  // Fetch live regime + recommendations from backend
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchLiveData() {
+      try {
+        // Fetch regime data
+        const regime = await getMarketRegime();
+        if (cancelled) return;
+
+        const label = regime.regime === 'bullish' ? 'Bullish' : regime.regime === 'bearish' ? 'Bearish' : 'Neutral';
+        setRegimeLabel(label);
+        setRegimeConfidence(Math.round(regime.confidence * 100));
+
+        // Derive probabilities from regime confidence
+        const conf = regime.confidence;
+        let bull = 50, neutral = 30, bear = 20;
+        if (regime.regime === 'bullish') {
+          bull = Math.round(conf * 100);
+          neutral = Math.round((1 - conf) * 65);
+          bear = 100 - bull - neutral;
+        } else if (regime.regime === 'bearish') {
+          bear = Math.round(conf * 100);
+          neutral = Math.round((1 - conf) * 65);
+          bull = 100 - bear - neutral;
+        } else {
+          neutral = Math.round(conf * 100);
+          bull = Math.round((1 - conf) * 60);
+          bear = 100 - neutral - bull;
+        }
+        setBullProb(Math.max(0, bull));
+        setNeutralProb(Math.max(0, neutral));
+        setBearProb(Math.max(0, bear));
+
+        // Build updated regime history — append "Current" with live data
+        setRegimeHistory(prev => {
+          const history = prev.filter(p => p.date !== 'Current');
+          return [...history.slice(-4), { date: 'Current', bullProbability: Math.max(0, bull), neutralProbability: Math.max(0, neutral), bearProbability: Math.max(0, bear) }];
+        });
+
+        // Update model metrics for regime detection card
+        setLiveModelMetrics(prev => ({
+          ...prev,
+          regimeDetection: {
+            ...prev.regimeDetection,
+            currentRegime: label,
+            regimeConfidence: Math.round(conf * 100),
+          },
+        }));
+      } catch (err) {
+        console.warn('[AIPredictions] Regime fetch failed:', err);
+      }
+
+      try {
+        // Fetch recommendations and map to RL-style display
+        const recData = await getRecommendations({ limit: 8 });
+        if (cancelled) return;
+
+        const mapped: RlRec[] = recData.recommendations.map((rec, idx) => {
+          const direction = rec.direction === 'long' ? 'BUY' : rec.direction === 'short' ? 'SELL' : 'HOLD';
+          const totalRecs = recData.recommendations.length;
+          const allocation = Math.round((rec.score / recData.recommendations.reduce((s, r) => s + r.score, 0)) * 100);
+          const drivers = rec.reasoning?.key_drivers || [];
+          const risks = rec.reasoning?.risk_factors || [];
+          const reasoning = drivers.length > 0
+            ? drivers.slice(0, 2).join('; ')
+            : `AI score ${rec.score.toFixed(2)} — ${rec.confidence_pct}% confidence`;
+          return {
+            symbol: rec.symbol,
+            action: direction as 'BUY' | 'HOLD' | 'SELL',
+            allocation,
+            qValue: rec.score * 10,
+            expectedReward: rec.confidence_pct / 10,
+            riskAdjustedReturn: rec.score * 3,
+            reasoning: risks.length > 0 ? `${reasoning}. Risk: ${risks[0]}` : reasoning,
+            stateFeatures: {
+              momentum: rec.reasoning?.xgboost_signal ?? 0.5,
+              volatility: rec.reasoning?.garch_confidence ?? 0.25,
+              marketRegime: rec.reasoning?.regime ?? 'unknown',
+            },
+          };
+        });
+
+        if (mapped.length > 0) {
+          setLiveRlRecs(mapped);
+        }
+      } catch (err) {
+        console.warn('[AIPredictions] Recommendations fetch failed:', err);
+      }
+    }
+
+    fetchLiveData();
+    const interval = setInterval(fetchLiveData, 120_000); // refresh every 2 min
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
 
   return (
     <div className="space-y-8 max-w-[1600px] mx-auto atmospheric-overlay">
@@ -259,7 +337,7 @@ export default function AIPredictions() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(modelMetrics).map(([key, model], idx) => (
+            {Object.entries(liveModelMetrics).map(([key, model], idx) => (
               <motion.div
                 key={key}
                 className="intelligence-card p-4 cursor-pointer"
@@ -644,7 +722,7 @@ export default function AIPredictions() {
               </div>
 
               <div className="space-y-4">
-                {rlRecommendations.map((rec, idx) => (
+                {liveRlRecs.map((rec, idx) => (
                   <motion.div
                     key={rec.symbol}
                     className="intelligence-card p-5"
@@ -788,8 +866,8 @@ export default function AIPredictions() {
                   <h3>Hidden Markov Model - Regime Detection</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Radio className="w-4 h-4 text-[var(--success)]" />
-                  <span className="text-sm text-[var(--success)]">Bullish Regime</span>
+                  <Radio className="w-4 h-4" style={{ color: regimeLabel === 'Bullish' ? 'var(--success)' : regimeLabel === 'Bearish' ? 'var(--danger)' : 'var(--signal)' }} />
+                  <span className="text-sm" style={{ color: regimeLabel === 'Bullish' ? 'var(--success)' : regimeLabel === 'Bearish' ? 'var(--danger)' : 'var(--signal)' }}>{regimeLabel} Regime</span>
                 </div>
               </div>
 
@@ -854,7 +932,7 @@ export default function AIPredictions() {
                   whileHover={{ scale: 1.05 }}
                 >
                   <div className="text-3xl mb-1" style={{ color: 'var(--success)' }}>
-                    <AnimatedNumber value={72} suffix="%" />
+                    <AnimatedNumber value={bullProb} suffix="%" />
                   </div>
                   <div className="text-sm text-muted-foreground">Bullish Probability</div>
                 </motion.div>
@@ -864,7 +942,7 @@ export default function AIPredictions() {
                   whileHover={{ scale: 1.05 }}
                 >
                   <div className="text-3xl mb-1" style={{ color: 'var(--signal)' }}>
-                    <AnimatedNumber value={20} suffix="%" />
+                    <AnimatedNumber value={neutralProb} suffix="%" />
                   </div>
                   <div className="text-sm text-muted-foreground">Neutral Probability</div>
                 </motion.div>
@@ -874,7 +952,7 @@ export default function AIPredictions() {
                   whileHover={{ scale: 1.05 }}
                 >
                   <div className="text-3xl mb-1" style={{ color: 'var(--danger)' }}>
-                    <AnimatedNumber value={8} suffix="%" />
+                    <AnimatedNumber value={bearProb} suffix="%" />
                   </div>
                   <div className="text-sm text-muted-foreground">Bearish Probability</div>
                 </motion.div>

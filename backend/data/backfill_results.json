@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-03-06T00:24:24.088765",
+  "success": 496,
+  "failed": 1,
+  "total": 497,
+  "elapsed_seconds": 3593.4,
+  "failed_symbols": [
+    "HAVELLS"
+  ]
+}

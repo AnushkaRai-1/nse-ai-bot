@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Activity, Brain, Zap } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { AnimatedNumber, LiveValue, ConfidenceIndicator } from '../components/AnimatedNumber';
 import { IntelligenceSignal, ProbabilityField, AnalysisState } from '../components/IntelligenceSignal';
 import { ContextualPreview, HoverGlow } from '../components/ContextualPreview';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { useMarketData } from '../hooks/useMarketData';
+import { getBatchQuotes, getRecommendations, getMarketSectors, getMarketRegime, type Recommendation, type SectorData, type MarketRegimeData } from '../services/api';
 
-// Mock data
+
+// Intraday mock chart (no intraday API yet)
 const marketData = [
   { time: '9:30', nifty: 21450 },
   { time: '10:00', nifty: 21480 },
@@ -20,23 +23,16 @@ const marketData = [
   { time: '1:30', nifty: 21620 },
 ];
 
-const aiSignals = [
-  { stock: 'RELIANCE', signal: 'BUY' as const, confidence: 87, momentum: 8.2, fundamental: 7.8, price: 2845, change: 2.4 },
-  { stock: 'TCS', signal: 'HOLD' as const, confidence: 72, momentum: 6.5, fundamental: 8.1, price: 3620, change: 1.2 },
-  { stock: 'HDFCBANK', signal: 'BUY' as const, confidence: 84, momentum: 7.8, fundamental: 8.5, price: 1542, change: 0.8 },
-  { stock: 'INFY', signal: 'HOLD' as const, confidence: 68, momentum: 6.2, fundamental: 7.9, price: 1478, change: -0.5 },
-  { stock: 'ICICIBANK', signal: 'SELL' as const, confidence: 79, momentum: 4.3, fundamental: 6.8, price: 1024, change: -1.2 },
-  { stock: 'BHARTIARTL', signal: 'BUY' as const, confidence: 81, momentum: 8.5, fundamental: 7.2, price: 1156, change: 3.1 },
-];
-
-const sectorPerformance = [
-  { sector: 'IT', value: 2.4 },
-  { sector: 'Banking', value: -0.8 },
-  { sector: 'Auto', value: 3.2 },
-  { sector: 'Pharma', value: 1.5 },
-  { sector: 'FMCG', value: -0.3 },
-  { sector: 'Energy', value: 4.1 },
-];
+// Signal type for display
+interface AISignal {
+  stock: string;
+  signal: 'BUY' | 'HOLD' | 'SELL';
+  confidence: number;
+  momentum: number;
+  fundamental: number;
+  price: number;
+  change: number;
+}
 
 const AnimatedSection = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
   const { ref, isVisible } = useScrollAnimation({ threshold: 0.1, triggerOnce: true });
@@ -56,25 +52,82 @@ const AnimatedSection = ({ children, delay = 0 }: { children: React.ReactNode; d
 export default function Dashboard() {
   const [analysisState, setAnalysisState] = useState<'idle' | 'loading' | 'analyzing' | 'complete'>('idle');
   const [marketRegime, setMarketRegime] = useState({ sentiment: 72, strength: 78 });
+  const [regimeLabel, setRegimeLabel] = useState('Bullish');
+  const [liveSignals, setLiveSignals] = useState<AISignal[]>([]);
+  const [sectorPerformance, setSectorPerformance] = useState<{ sector: string; value: number }[]>([]);
 
+  // Real-time index data via WebSocket + REST polling fallback
+  const { quotes: indexQuotes } = useMarketData({
+    symbols: ['NIFTY50', 'SENSEX', 'INDIAVIX'],
+    realtime: true,
+    pollInterval: 30000,
+  });
+
+  const nifty = indexQuotes.get('NIFTY50');
+  const sensex = indexQuotes.get('SENSEX');
+  const vix = indexQuotes.get('INDIAVIX');
+
+  // Fetch AI recommendations, market regime, and sector data from backend
   useEffect(() => {
-    const sequence = async () => {
+    const fetchDashboardData = async () => {
       setAnalysisState('loading');
-      await new Promise(resolve => setTimeout(resolve, 800));
-      setAnalysisState('analyzing');
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      setAnalysisState('complete');
+      try {
+        // Fetch all dashboard data in parallel
+        const [recsData, regimeData, sectorsData] = await Promise.allSettled([
+          getRecommendations({ limit: 10 }),
+          getMarketRegime(),
+          getMarketSectors(),
+        ]);
+
+        setAnalysisState('analyzing');
+
+        // Process recommendations → signal cards
+        if (recsData.status === 'fulfilled') {
+          const recs = recsData.value.recommendations;
+          const symbols = recs.map(r => r.symbol);
+          // Fetch live prices for recommended stocks
+          let priceMap: Record<string, { price: number; changePercent: number }> = {};
+          try {
+            const { quotes } = await getBatchQuotes(symbols);
+            priceMap = quotes;
+          } catch {}
+
+          const signals: AISignal[] = recs.map(rec => {
+            const live = priceMap[rec.symbol];
+            return {
+              stock: rec.symbol,
+              signal: rec.direction === 'long' ? 'BUY' as const : 'HOLD' as const,
+              confidence: rec.confidence_pct,
+              momentum: rec.reasoning.xgboost_signal * 10,
+              fundamental: rec.score / 10,
+              price: live?.price ?? 0,
+              change: live?.changePercent ?? 0,
+            };
+          });
+          setLiveSignals(signals);
+        }
+
+        // Process regime
+        if (regimeData.status === 'fulfilled') {
+          const r = regimeData.value;
+          setRegimeLabel(r.regime.charAt(0).toUpperCase() + r.regime.slice(1));
+          setMarketRegime({ sentiment: r.confidence * 100, strength: r.confidence * 100 });
+        }
+
+        // Process sectors
+        if (sectorsData.status === 'fulfilled') {
+          setSectorPerformance(
+            sectorsData.value.sectors.map(s => ({ sector: s.sector, value: s.avgChange }))
+          );
+        }
+
+        setAnalysisState('complete');
+      } catch {
+        setAnalysisState('complete');
+      }
     };
-    sequence();
-
-    // Simulate live updates
-    const interval = setInterval(() => {
-      setMarketRegime(prev => ({
-        sentiment: prev.sentiment + (Math.random() - 0.5) * 2,
-        strength: prev.strength + (Math.random() - 0.5) * 1.5,
-      }));
-    }, 3000);
-
+    fetchDashboardData();
+    const interval = setInterval(fetchDashboardData, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -129,8 +182,8 @@ export default function Dashboard() {
                 <Activity className="w-4 h-4 text-[var(--success)]" />
               </div>
               <div className="space-y-2">
-                <div className="text-2xl" style={{ color: 'var(--success)' }}>
-                  Bullish
+                <div className="text-2xl" style={{ color: regimeLabel === 'Bull' || regimeLabel === 'Bullish' ? 'var(--success)' : regimeLabel === 'Bear' || regimeLabel === 'Bearish' ? 'var(--danger)' : 'var(--signal)' }}>
+                  {regimeLabel}
                 </div>
                 <ConfidenceIndicator value={marketRegime.strength} label="Strength" />
               </div>
@@ -141,15 +194,15 @@ export default function Dashboard() {
         <AnimatedSection delay={0.2}>
           <ContextualPreview
             title="NIFTY 50"
-            value={21620}
-            change={170.5}
-            changePercent={0.79}
+            value={nifty?.price ?? 21620}
+            change={nifty?.change ?? 170.5}
+            changePercent={nifty?.changePercent ?? 0.79}
             chartData={marketData.slice(-8).map(d => ({ value: d.nifty }))}
             confidence={85}
             metadata={[
-              { label: 'Open', value: '21,450' },
-              { label: 'High', value: '21,640' },
-              { label: 'Volume', value: '₹28,420 Cr' },
+              { label: 'Open', value: nifty?.open?.toLocaleString('en-IN') ?? '21,450' },
+              { label: 'High', value: nifty?.high?.toLocaleString('en-IN') ?? '21,640' },
+              { label: 'Volume', value: nifty?.volume ? `₹${(nifty.volume / 10000000).toFixed(0)} Cr` : '₹28,420 Cr' },
             ]}
           >
             <HoverGlow color="primary">
@@ -160,9 +213,9 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <LiveValue
-                  value={21620}
-                  change={170.5}
-                  changePercent={0.79}
+                  value={nifty?.price ?? 21620}
+                  change={nifty?.change ?? 170.5}
+                  changePercent={nifty?.changePercent ?? 0.79}
                   decimals={0}
                 />
               </div>
@@ -173,9 +226,9 @@ export default function Dashboard() {
         <AnimatedSection delay={0.3}>
           <ContextualPreview
             title="SENSEX"
-            value={71320}
-            change={470}
-            changePercent={0.66}
+            value={sensex?.price ?? 71320}
+            change={sensex?.change ?? 470}
+            changePercent={sensex?.changePercent ?? 0.66}
             chartData={marketData.slice(-8).map(d => ({ value: d.nifty * 3.3 }))}
             confidence={83}
           >
@@ -187,9 +240,9 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <LiveValue
-                  value={71320}
-                  change={470}
-                  changePercent={0.66}
+                  value={sensex?.price ?? 71320}
+                  change={sensex?.change ?? 470}
+                  changePercent={sensex?.changePercent ?? 0.66}
                   decimals={0}
                 />
               </div>
@@ -206,9 +259,9 @@ export default function Dashboard() {
                 </span>
               </div>
               <LiveValue
-                value={14.25}
-                change={-0.87}
-                changePercent={-5.75}
+                value={vix?.price ?? 14.25}
+                change={vix?.change ?? -0.87}
+                changePercent={vix?.changePercent ?? -5.75}
                 decimals={2}
               />
             </div>
@@ -245,7 +298,7 @@ export default function Dashboard() {
           </div>
 
           <div className="scroll-section -mx-6 px-6">
-            {aiSignals.map((signal, idx) => (
+            {liveSignals.map((signal, idx) => (
               <motion.div
                 key={signal.stock}
                 initial={{ opacity: 0, x: 20 }}

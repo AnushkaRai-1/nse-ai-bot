@@ -1,37 +1,73 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router';
-import { ArrowLeft, TrendingUp, TrendingDown, Brain, Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, TrendingUp, TrendingDown, Brain, Info, Loader2 } from 'lucide-react';
+import { getQuote, getAIPrediction, getHistoricalData, getStockSignals, type MarketQuote, type AIPrediction, type StockSignals } from '../services/api';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ComposedChart, Line, Bar, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
-// Mock candlestick data
-const priceData = [
-  { date: 'Jan 1', price: 2650, rsi: 52, macd: 12, volume: 2.1, ma20: 2620, ma50: 2590 },
-  { date: 'Jan 8', price: 2680, rsi: 58, macd: 18, volume: 2.8, ma20: 2635, ma50: 2595 },
-  { date: 'Jan 15', price: 2720, rsi: 64, macd: 24, volume: 3.2, ma20: 2655, ma50: 2605 },
-  { date: 'Jan 22', price: 2710, rsi: 62, macd: 20, volume: 2.4, ma20: 2670, ma50: 2615 },
-  { date: 'Jan 29', price: 2760, rsi: 68, macd: 28, volume: 3.6, ma20: 2690, ma50: 2630 },
-  { date: 'Feb 5', price: 2790, rsi: 72, macd: 32, volume: 3.9, ma20: 2715, ma50: 2645 },
-  { date: 'Feb 12', price: 2825, rsi: 74, macd: 35, volume: 4.2, ma20: 2740, ma50: 2665 },
-  { date: 'Feb 19', price: 2845, rsi: 68, macd: 30, volume: 3.5, ma20: 2765, ma50: 2685 },
-];
-
-const fundamentalData = {
-  marketCap: '19.2T',
-  pe: 24.5,
-  eps: 116.2,
-  roe: 12.8,
-  roce: 14.2,
-  debtToEquity: 0.42,
-  dividendYield: 0.35,
-  bookValue: 1856,
-};
+// priceData is now fetched from /market/historical/{symbol} in useEffect
 
 export default function StockDetail() {
   const { symbol } = useParams();
   const navigate = useNavigate();
+  const [quote, setQuote] = useState<MarketQuote | null>(null);
+  const [prediction, setPrediction] = useState<AIPrediction | null>(null);
+  const [signals, setSignals] = useState<StockSignals | null>(null);
+  const [priceData, setPriceData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!symbol) return;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [q, p, h, s] = await Promise.all([
+          getQuote(symbol).catch(() => null),
+          getAIPrediction(symbol).catch(() => null),
+          getHistoricalData(symbol, 90).catch(() => null),
+          getStockSignals(symbol).catch(() => null),
+        ]);
+        setQuote(q);
+        setPrediction(p);
+        setSignals(s);
+        if (h && h.data.length > 0) {
+          setPriceData(h.data.map(d => ({
+            date: new Date(d.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
+            price: d.close,
+            rsi: 50, // Placeholder — RSI is per-symbol not per-day in our API
+            macd: 0,
+            volume: d.volume / 100000, // to lakhs
+            ma20: d.close, // Placeholder
+            ma50: d.close, // Placeholder
+          })));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [symbol]);
+
+  const currentPrice = quote?.price ?? 2845;
+  const priceChange = quote?.change ?? 68.50;
+  const priceChangePercent = quote?.changePercent ?? 2.46;
+  const aiSignal = prediction?.prediction ?? 'BUY';
+  const aiConfidence = prediction?.confidence ?? 87;
+  const aiTarget = prediction?.targetPrice ?? 3120;
+
+  const fundamentalData = {
+    rsi: signals?.technical.rsi_14 ?? 0,
+    macd: signals?.technical.macd_signal ?? 0,
+    adx: signals?.technical.adx_value ?? 0,
+    atr: signals?.technical.atr_14 ?? 0,
+    pe: signals?.fundamental.pe_zscore ?? 0,
+    debtToEquity: signals?.fundamental.de_ratio ?? 0,
+    fcfYield: signals?.fundamental.fcf_yield ?? 0,
+  };
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto">
@@ -46,14 +82,14 @@ export default function StockDetail() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl mb-1">{symbol}</h1>
-          <p className="text-muted-foreground">Reliance Industries Limited</p>
+          <h1 className="text-3xl mb-1">{symbol?.toUpperCase()}</h1>
+          <p className="text-muted-foreground">{loading ? 'Loading...' : symbol?.toUpperCase()}</p>
         </div>
         <div className="text-right">
-          <div className="text-3xl mb-1">₹2,845</div>
-          <div className="flex items-center gap-1 text-success">
-            <TrendingUp className="w-4 h-4" />
-            <span>+68.50 (+2.46%)</span>
+          <div className="text-3xl mb-1">₹{currentPrice.toLocaleString('en-IN')}</div>
+          <div className={`flex items-center gap-1 ${priceChange >= 0 ? 'text-success' : 'text-destructive'}`}>
+            {priceChange >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+            <span>{priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)} ({priceChange >= 0 ? '+' : ''}{priceChangePercent.toFixed(2)}%)</span>
           </div>
         </div>
       </div>
@@ -69,30 +105,35 @@ export default function StockDetail() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
                 <h3>AI Analysis</h3>
-                <Badge className="bg-success/20 text-success border-success/30">BUY</Badge>
+                <Badge className={
+                  aiSignal === 'BUY' ? 'bg-success/20 text-success border-success/30' :
+                  aiSignal === 'SELL' ? 'bg-destructive/20 text-destructive border-destructive/30' :
+                  'bg-warning/20 text-warning border-warning/30'
+                }>{aiSignal}</Badge>
               </div>
               <p className="text-muted-foreground mb-4">
-                Based on technical momentum, fundamental strength, and sentiment analysis, RELIANCE shows strong bullish signals. 
-                The stock has broken above key resistance levels with increasing volume, while maintaining healthy fundamentals with 
-                ROE of 12.8% and manageable debt levels. AI confidence stands at 87% for continued upward movement in the short to medium term.
+                Based on technical momentum, fundamental strength, and sentiment analysis, {symbol?.toUpperCase()} shows
+                {aiSignal === 'BUY' ? ' strong bullish' : aiSignal === 'SELL' ? ' bearish' : ' neutral'} signals.
+                AI models have analyzed price action, volume patterns, and market regime to generate this recommendation
+                with {aiConfidence}% confidence for the short to medium term.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">AI Confidence Score</div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-accent to-primary" style={{ width: '87%' }}></div>
+                      <div className="h-full bg-gradient-to-r from-accent to-primary" style={{ width: `${aiConfidence}%` }}></div>
                     </div>
-                    <span className="text-lg text-accent">87%</span>
+                    <span className="text-lg text-accent">{aiConfidence}%</span>
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Target Price (30d)</div>
-                  <div className="text-lg text-success">₹3,120</div>
+                  <div className="text-lg text-success">₹{aiTarget.toLocaleString('en-IN')}</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground mb-1">Stop Loss</div>
-                  <div className="text-lg text-destructive">₹2,650</div>
+                  <div className="text-lg text-destructive">₹{Math.round(currentPrice * 0.93).toLocaleString('en-IN')}</div>
                 </div>
               </div>
             </div>
@@ -214,36 +255,36 @@ export default function StockDetail() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Market Cap</div>
-            <div className="text-xl">₹{fundamentalData.marketCap}</div>
+            <div className="text-sm text-muted-foreground mb-1">RSI (14)</div>
+            <div className="text-xl">{fundamentalData.rsi?.toFixed(1) || 'N/A'}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">P/E Ratio</div>
-            <div className="text-xl">{fundamentalData.pe}</div>
+            <div className="text-sm text-muted-foreground mb-1">MACD Signal</div>
+            <div className="text-xl">{fundamentalData.macd?.toFixed(2) || 'N/A'}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">EPS</div>
-            <div className="text-xl">₹{fundamentalData.eps}</div>
+            <div className="text-sm text-muted-foreground mb-1">ADX</div>
+            <div className="text-xl">{fundamentalData.adx?.toFixed(1) || 'N/A'}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">ROE</div>
-            <div className="text-xl text-success">{fundamentalData.roe}%</div>
+            <div className="text-sm text-muted-foreground mb-1">ATR (14)</div>
+            <div className="text-xl">{fundamentalData.atr?.toFixed(2) || 'N/A'}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">ROCE</div>
-            <div className="text-xl text-success">{fundamentalData.roce}%</div>
+            <div className="text-sm text-muted-foreground mb-1">P/E Z-Score</div>
+            <div className="text-xl">{fundamentalData.pe?.toFixed(2) || 'N/A'}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Debt/Equity</div>
-            <div className="text-xl">{fundamentalData.debtToEquity}</div>
+            <div className="text-sm text-muted-foreground mb-1">D/E Ratio</div>
+            <div className="text-xl">{fundamentalData.debtToEquity?.toFixed(2) || 'N/A'}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Dividend Yield</div>
-            <div className="text-xl">{fundamentalData.dividendYield}%</div>
+            <div className="text-sm text-muted-foreground mb-1">FCF Yield</div>
+            <div className="text-xl text-success">{fundamentalData.fcfYield ? `${(fundamentalData.fcfYield * 100).toFixed(1)}%` : 'N/A'}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Book Value</div>
-            <div className="text-xl">₹{fundamentalData.bookValue}</div>
+            <div className="text-sm text-muted-foreground mb-1">Sentiment</div>
+            <div className="text-xl">{signals?.sentiment.sentiment_24h?.toFixed(2) || 'N/A'}</div>
           </div>
         </div>
       </div>

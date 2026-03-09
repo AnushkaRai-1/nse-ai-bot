@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from "framer-motion";
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { AnimatedNumber } from './AnimatedNumber';
 

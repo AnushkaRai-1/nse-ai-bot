@@ -1,0 +1,72 @@
+# ============================================================
+# NSE AI Stock Recommendation System — Python Dependencies
+# PRD v1.0 Approved Stack — All packages from Section 11
+# Pin exact versions for production. Use >= for development.
+# Run: pip-audit to check for CVEs before deploy.
+# ============================================================
+
+# --- Backend Framework ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+gunicorn>=23.0.0
+
+# --- Database ---
+sqlalchemy[asyncio]>=2.0.35
+asyncpg>=0.30.0
+alembic>=1.14.0
+
+# --- Cache / Rate Limiting ---
+redis>=5.2.0
+
+# --- Data Validation ---
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+
+# --- ML Primary (Literature Review: XGBoost/LightGBM = PRIMARY model) ---
+lightgbm>=4.5.0
+xgboost>=2.1.0
+
+# --- Deep Learning (Literature Review: LSTM = SECONDARY, 15-30d horizon) ---
+torch>=2.5.0
+
+# --- Time Series / GARCH (Literature Review: GARCH(1,1)-filtered MC, not standard GBM) ---
+arch>=7.0.0
+
+# --- Feature Engineering ---
+pandas>=2.2.0
+numpy>=2.0.0
+ta>=0.11.0
+
+# --- Backtesting (Literature Review: Walk-forward ONLY, vectorbt for speed) ---
+vectorbt>=0.26.0
+
+# --- NLP / Sentiment (Literature Review: FinBERT + NSE fine-tune) ---
+transformers>=4.47.0
+
+# --- MLOps ---
+mlflow>=2.19.0
+optuna>=4.1.0
+
+# --- Scheduler ---
+apscheduler>=3.10.0
+
+# --- Data Fetching ---
+yfinance>=0.2.50
+# nsepython>=0.8.0  # Install separately — has system-level deps
+httpx>=0.28.0
+
+# --- Security ---
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.2.0
+
+# --- Utilities ---
+python-dotenv>=1.0.1
+python-multipart>=0.0.18
+structlog>=24.4.0
+scipy>=1.14.0
+scikit-learn>=1.6.0
+statsmodels>=0.14.0
+
+# --- Dependency Audit (CI only) ---
+pip-audit>=2.7.0

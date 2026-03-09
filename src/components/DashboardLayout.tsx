@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router';
-import { motion, AnimatePresence } from 'motion/react';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { motion, AnimatePresence } from "framer-motion";
+import { clearAuthToken } from '../services/api';
 import { 
   LayoutDashboard, 
   Globe, 
@@ -13,17 +14,20 @@ import {
   X,
   TrendingUp,
   Bell,
-  User
+  User,
+  LogOut
 } from 'lucide-react';
 import { Button } from './ui/button';
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearAuthToken();
+    navigate('/auth');
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -173,32 +177,44 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 })}
               </nav>
 
-              {/* System status indicator */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="absolute bottom-4 left-3 right-3 p-3 rounded-lg bg-muted/30 border border-border"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <motion.div
-                    className="w-2 h-2 rounded-full bg-success"
-                    animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [1, 0.7, 1],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  />
-                  <span className="text-xs">System Online</span>
-                </div>
-                <div className="text-xs text-muted-foreground tabular-nums">
-                  Latency: 12ms
-                </div>
-              </motion.div>
+              {/* Logout + System status */}
+              <div className="absolute bottom-4 left-3 right-3 space-y-2">
+                <motion.button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:text-danger hover:bg-danger/5 transition-colors"
+                  whileHover={{ x: 2 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="tracking-tight">Logout</span>
+                </motion.button>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="p-3 rounded-lg bg-muted/30 border border-border"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-success"
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [1, 0.7, 1],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                      }}
+                    />
+                    <span className="text-xs">System Online</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground tabular-nums">
+                    Latency: 12ms
+                  </div>
+                </motion.div>
+              </div>
             </div>
           </motion.aside>
         )}
@@ -218,7 +234,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="p-6"
         >
-          {children}
+          <Outlet />
         </motion.div>
       </motion.main>
     </div>

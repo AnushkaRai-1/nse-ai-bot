@@ -1,0 +1,101 @@
+# ═══════════════════════════════════════════════════════════════
+# NSE AI Stock Recommendation System — Docker Compose
+# PRD Section 11: Full stack for local development
+#
+# Services:
+#   - app:       FastAPI backend (port 8000)
+#   - postgres:  PostgreSQL 16 + TimescaleDB (port 5432)
+#   - redis:     Redis 7 (port 6379)
+#   - mlflow:    MLflow tracking server (port 5000)
+#
+# Usage:
+#   docker compose up -d          # Start all services
+#   docker compose logs -f app    # Follow app logs
+#   docker compose down -v        # Stop and remove volumes
+# ═══════════════════════════════════════════════════════════════
+
+services:
+  # ── PostgreSQL + TimescaleDB ──────────────────────────────
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: nseai-postgres
+    environment:
+      POSTGRES_DB: nseai
+      POSTGRES_USER: nseai
+      POSTGRES_PASSWORD: nseai_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../scripts/init_db.sql:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nseai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Redis ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: nseai-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── FastAPI Backend ───────────────────────────────────────
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: nseai-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://nseai:nseai_dev_password@postgres:5432/nseai
+      DATABASE_URL_SYNC: postgresql://nseai:nseai_dev_password@postgres:5432/nseai
+      REDIS_URL: redis://redis:6379/0
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      JWT_PRIVATE_KEY_PATH: /app/keys/jwt_private.pem
+      JWT_PUBLIC_KEY_PATH: /app/keys/jwt_public.pem
+      DEBUG: "true"
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - model_artifacts:/app/model_artifacts
+      - ./keys:/app/keys:ro
+    restart: unless-stopped
+
+  # ── MLflow Tracking Server ────────────────────────────────
+  mlflow:
+    image: python:3.11-slim
+    container_name: nseai-mlflow
+    command: >
+      bash -c "pip install mlflow &&
+               mlflow server
+               --backend-store-uri sqlite:///mlflow/mlflow.db
+               --default-artifact-root /mlflow/artifacts
+               --host 0.0.0.0 --port 5000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_artifacts:/mlflow
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  model_artifacts:
+  mlflow_artifacts:

@@ -1,5 +1,5 @@
 import React, { useState, forwardRef } from 'react';
-import { motion } from 'motion/react';
+import { motion } from "framer-motion";
 import { Input } from './ui/input';
 
 interface InteractiveInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -107,4 +107,4 @@ export const InteractiveInput = forwardRef<HTMLInputElement, InteractiveInputPro
 InteractiveInput.displayName = 'InteractiveInput';
 
 // Import fix for AnimatePresence
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence } from "framer-motion";

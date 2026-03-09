@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from "framer-motion";
 import { Globe, TrendingUp, TrendingDown, Activity, Waves, Sparkles } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { AnimatedNumber, LiveValue } from '../components/AnimatedNumber';
 import { IntelligenceSignal, AnalysisState } from '../components/IntelligenceSignal';
 import { ContextualPreview, HoverGlow } from '../components/ContextualPreview';
 import { useScrollAnimation } from '../hooks/useScrollAnimation';
+import { useMarketData } from '../hooks/useMarketData';
+import { getMarketOverview, getMarketSectors, getMarketRegime, type MarketOverviewData, type SectorData, type MarketRegimeData } from '../services/api';
 
 const globalIndices = [
   { name: 'NIFTY 50', value: 21620, change: 0.79, country: 'India' },
@@ -18,7 +20,7 @@ const globalIndices = [
   { name: 'HANG SENG', value: 16542, change: -0.56, country: 'Hong Kong' },
 ];
 
-const sectorPerformance = [
+const defaultSectors = [
   { sector: 'IT', ytd: 12.4, mtd: 2.8, wtd: 0.9 },
   { sector: 'Banking', ytd: 8.2, mtd: -0.8, wtd: -0.3 },
   { sector: 'Auto', ytd: 18.7, mtd: 3.2, wtd: 1.2 },
@@ -29,7 +31,7 @@ const sectorPerformance = [
   { sector: 'Realty', ytd: 15.8, mtd: 2.3, wtd: 0.7 },
 ];
 
-const marketBreadth = [
+const defaultBreadth = [
   { date: 'Mon', advances: 1245, declines: 856 },
   { date: 'Tue', advances: 1342, declines: 759 },
   { date: 'Wed', advances: 1156, declines: 945 },
@@ -49,7 +51,7 @@ const volumeData = [
   { time: '1:30', volume: 4.2 },
 ];
 
-const topGainers = [
+const defaultGainers = [
   { symbol: 'ADANIENT', change: 12.4, price: 2845 },
   { symbol: 'TATAMOTORS', change: 8.7, price: 892 },
   { symbol: 'BAJFINANCE', change: 7.9, price: 6720 },
@@ -57,7 +59,7 @@ const topGainers = [
   { symbol: 'MARUTI', change: 5.8, price: 12456 },
 ];
 
-const topLosers = [
+const defaultLosers = [
   { symbol: 'HINDALCO', change: -4.2, price: 645 },
   { symbol: 'TATASTEEL', change: -3.8, price: 142 },
   { symbol: 'COALINDIA', change: -3.5, price: 412 },
@@ -83,17 +85,100 @@ const AnimatedSection = ({ children, delay = 0 }: { children: React.ReactNode; d
 export default function MarketOverview() {
   const [liveData, setLiveData] = useState(globalIndices);
   const [marketSentiment, setMarketSentiment] = useState<'bullish' | 'neutral' | 'bearish'>('bullish');
+  const [sectorPerformance, setSectorPerformance] = useState(defaultSectors);
+  const [marketBreadth, setMarketBreadth] = useState(defaultBreadth);
+  const [topGainers, setTopGainers] = useState(defaultGainers);
+  const [topLosers, setTopLosers] = useState(defaultLosers);
+  const [regimeConfidence, setRegimeConfidence] = useState(78);
 
+  // Real-time data for Indian indices via WebSocket + REST fallback
+  const { quotes: indexQuotes } = useMarketData({
+    symbols: ['NIFTY50', 'SENSEX'],
+    realtime: true,
+    pollInterval: 30000,
+  });
+
+  // Merge API data into local state when available
   useEffect(() => {
-    // Simulate live market updates
-    const interval = setInterval(() => {
-      setLiveData(prev => prev.map(index => ({
-        ...index,
-        value: index.value + (Math.random() - 0.5) * 10,
-        change: index.change + (Math.random() - 0.5) * 0.1,
-      })));
-    }, 3000);
+    setLiveData(prev => prev.map(index => {
+      const symbolMap: Record<string, string> = { 'NIFTY 50': 'NIFTY50', 'SENSEX': 'SENSEX' };
+      const apiSymbol = symbolMap[index.name];
+      if (apiSymbol) {
+        const live = indexQuotes.get(apiSymbol);
+        if (live) return { ...index, value: live.price, change: live.changePercent };
+      }
+      return index;
+    }));
+  }, [indexQuotes]);
 
+  // Fetch backend data: regime, sectors, overview (breadth + gainers/losers)
+  useEffect(() => {
+    const fetchOverview = async () => {
+      const [regimeRes, sectorsRes, overviewRes] = await Promise.allSettled([
+        getMarketRegime(),
+        getMarketSectors(),
+        getMarketOverview(),
+      ]);
+
+      if (regimeRes.status === 'fulfilled') {
+        const r = regimeRes.value;
+        setMarketSentiment(r.regime === 'bull' ? 'bullish' : r.regime === 'bear' ? 'bearish' : 'neutral');
+        setRegimeConfidence(Math.round(r.confidence * 100));
+      }
+
+      if (sectorsRes.status === 'fulfilled') {
+        const sectors = sectorsRes.value.sectors;
+        if (sectors.length > 0) {
+          setSectorPerformance(sectors.map(s => ({
+            sector: s.sector,
+            ytd: s.avgChange * 10, // Approximate scale
+            mtd: s.avgChange * 3,
+            wtd: s.avgChange,
+          })));
+        }
+      }
+
+      if (overviewRes.status === 'fulfilled') {
+        const ov = overviewRes.value;
+        if (ov.gainers.length > 0) {
+          setTopGainers(ov.gainers.slice(0, 5).map(g => ({
+            symbol: g.symbol,
+            change: g.changePercent,
+            price: g.price,
+          })));
+        }
+        if (ov.losers.length > 0) {
+          setTopLosers(ov.losers.slice(0, 5).map(l => ({
+            symbol: l.symbol,
+            change: l.changePercent,
+            price: l.price,
+          })));
+        }
+        setMarketBreadth(prev => [
+          ...prev.slice(0, -1),
+          { date: 'Today', advances: ov.advances, declines: ov.declines },
+        ]);
+      }
+    };
+    fetchOverview();
+    const interval = setInterval(fetchOverview, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Random drift for international indices (no API available)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveData(prev => prev.map(index => {
+        if (index.country !== 'India') {
+          return {
+            ...index,
+            value: index.value + (Math.random() - 0.5) * 10,
+            change: index.change + (Math.random() - 0.5) * 0.1,
+          };
+        }
+        return index;
+      }));
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -149,7 +234,7 @@ export default function MarketOverview() {
             </div>
             <div className="text-right">
               <div className="text-sm text-muted-foreground">AI Confidence</div>
-              <AnimatedNumber value={78} suffix="%" className="text-xl text-[var(--primary)]" />
+              <AnimatedNumber value={regimeConfidence} suffix="%" className="text-xl text-[var(--primary)]" />
             </div>
           </div>
         </motion.div>

@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
-} from "react-router";
+} from "react-router-dom";
+
 import LoginPage from "./pages/LoginPage";
 import Auth from "./pages/Auth";
 import DashboardLayout from "./components/DashboardLayout";
@@ -17,25 +18,30 @@ import Settings from "./pages/Settings";
 import MarketOverview from "./pages/MarketOverview";
 import AIPredictions from "./pages/AIPredictions";
 import { LoadingSystem } from "./components/LoadingSystem";
-import { getAuthToken } from "./services/api";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { getAuthToken, onAuthChange } from "./services/api";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing auth token on mount
   useEffect(() => {
+    // Check token on mount (handles page refresh)
     const token = getAuthToken();
     setIsAuthenticated(!!token);
     setIsLoading(false);
+
+    // Listen for login/logout from any component (Auth.tsx, LoginPage, sidebar logout, etc.)
+    const unsubscribe = onAuthChange((authed) => {
+      setIsAuthenticated(authed);
+    });
+
+    return unsubscribe;
   }, []);
 
+  // Called by LoginPage after successful API login + setAuthToken
   const handleLogin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    }, 1500);
+    setIsAuthenticated(true);
   };
 
   if (isLoading) {
@@ -52,10 +58,6 @@ export default function App() {
   return (
     <Router>
       <div className="min-h-screen bg-background dark">
-        <LoadingSystem
-          isLoading={isLoading}
-          message="Initializing secure connection"
-        />
         <Routes>
           <Route
             path="/auth"
@@ -67,6 +69,7 @@ export default function App() {
               )
             }
           />
+
           <Route
             path="/login"
             element={
@@ -77,55 +80,27 @@ export default function App() {
               )
             }
           />
+
           <Route
-            path="/*"
+            path="/"
             element={
               isAuthenticated ? (
-                <DashboardLayout>
-                  <Routes>
-                    <Route
-                      path="/dashboard"
-                      element={<Dashboard />}
-                    />
-                    <Route
-                      path="/market-overview"
-                      element={<MarketOverview />}
-                    />
-                    <Route
-                      path="/screener"
-                      element={<StockScreener />}
-                    />
-                    <Route
-                      path="/stock/:symbol"
-                      element={<StockDetail />}
-                    />
-                    <Route
-                      path="/predictions"
-                      element={<AIPredictions />}
-                    />
-                    <Route
-                      path="/portfolio"
-                      element={<Portfolio />}
-                    />
-                    <Route
-                      path="/risk"
-                      element={<RiskSimulation />}
-                    />
-                    <Route
-                      path="/settings"
-                      element={<Settings />}
-                    />
-                    <Route
-                      path="*"
-                      element={<Navigate to="/dashboard" />}
-                    />
-                  </Routes>
-                </DashboardLayout>
+                <DashboardLayout />
               ) : (
                 <Navigate to="/auth" />
               )
             }
-          />
+          >
+            <Route path="dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+            <Route path="market-overview" element={<ErrorBoundary><MarketOverview /></ErrorBoundary>} />
+            <Route path="screener" element={<ErrorBoundary><StockScreener /></ErrorBoundary>} />
+            <Route path="stock/:symbol" element={<ErrorBoundary><StockDetail /></ErrorBoundary>} />
+            <Route path="predictions" element={<ErrorBoundary><AIPredictions /></ErrorBoundary>} />
+            <Route path="portfolio" element={<ErrorBoundary><Portfolio /></ErrorBoundary>} />
+            <Route path="risk" element={<ErrorBoundary><RiskSimulation /></ErrorBoundary>} />
+            <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
+            <Route path="*" element={<Navigate to="/dashboard" />} />
+          </Route>
         </Routes>
       </div>
     </Router>

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from "framer-motion";
 import { TrendingUp, Lock, Mail, User, Shield } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { InteractiveInput } from '../components/InteractiveInput';
 import { login, signup, setAuthToken, type SignupData, type LoginData } from '../services/api';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 
 export default function Auth() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -37,8 +37,15 @@ export default function Auth() {
       } else {
         const data: SignupData = { email, password, name, role };
         await signup(data);
-        setSuccess('Account created! You can now login.');
-        setMode('login');
+
+        // Immediately login after signup
+        const response = await login({ email, password });
+        setAuthToken(response.access_token);
+
+        setSuccess('Account created! Redirecting...');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed');
@@ -241,7 +248,7 @@ export default function Auth() {
               />
               {mode === 'signup' && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Minimum 8 characters
+                  Min 8 characters, at least 1 uppercase letter and 1 digit
                 </p>
               )}
             </div>
