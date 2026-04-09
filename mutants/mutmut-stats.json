@@ -1,0 +1,27 @@
+{
+    "tests_by_mangled_function_name": {
+        "backend.security.rate_limit.x_check_rate_limit": [
+            "backend/tests/test_rate_limit.py::test_check_rate_limit_increments_when_under_limit[asyncio]",
+            "backend/tests/test_rate_limit.py::test_check_rate_limit_default_window_and_error_message[asyncio]",
+            "backend/tests/test_rate_limit.py::test_check_rate_limit_raises_when_limit_exceeded[asyncio]"
+        ],
+        "backend.security.rate_limit.x_rate_limit_middleware": [
+            "backend/tests/test_rate_limit.py::test_rate_limit_middleware_uses_forwarded_ip_and_explicit_limit[asyncio]",
+            "backend/tests/test_rate_limit.py::test_rate_limit_middleware_uses_user_id[asyncio]"
+        ],
+        "backend.security.rate_limit.x_auth_rate_limit": [
+            "backend/tests/test_rate_limit.py::test_auth_rate_limit_prefers_forwarded_header[asyncio]",
+            "backend/tests/test_rate_limit.py::test_auth_rate_limit_uses_auth_prefix_and_setting[asyncio]"
+        ]
+    },
+    "duration_by_test": {
+        "backend/tests/test_rate_limit.py::test_check_rate_limit_raises_when_limit_exceeded[asyncio]": 0.0007368749998022395,
+        "backend/tests/test_rate_limit.py::test_check_rate_limit_increments_when_under_limit[asyncio]": 0.00045845799968446954,
+        "backend/tests/test_rate_limit.py::test_rate_limit_middleware_uses_user_id[asyncio]": 0.0004495420002967876,
+        "backend/tests/test_rate_limit.py::test_rate_limit_middleware_uses_forwarded_ip_and_explicit_limit[asyncio]": 0.0004229999999552092,
+        "backend/tests/test_rate_limit.py::test_auth_rate_limit_uses_auth_prefix_and_setting[asyncio]": 0.0005354180002541398,
+        "backend/tests/test_rate_limit.py::test_check_rate_limit_default_window_and_error_message[asyncio]": 0.0007483340004910133,
+        "backend/tests/test_rate_limit.py::test_auth_rate_limit_prefers_forwarded_header[asyncio]": 0.0005120830010127975
+    },
+    "stats_time": 0.24855700000000003
+}

@@ -24,6 +24,9 @@ echo "║   SentinelQuant E2E Smoke Test                      ║"
 echo "║   $(date '+%Y-%m-%d %H:%M:%S')                            ║"
 echo "╚══════════════════════════════════════════════════════╝"
 echo ""
+echo "==================== INTEGRATION TESTING ===================="
+echo "Take a screenshot after the results summary appears below."
+echo ""
 
 # ── 1. AUTH ──────────────────────────────────────────────
 echo "▶ AUTH ENDPOINTS"
