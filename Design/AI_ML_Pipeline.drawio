@@ -1,0 +1,55 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.5.3">
+  <diagram name="Sentinel Quant - AI/ML Pipeline" id="OmYXq8-r7uK8rTlMgrdi">
+    <mxGraphModel dx="872" dy="465" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" value="NSE API (Stock Market Data)" vertex="1">
+          <mxGeometry height="60" width="300" x="350" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="Data Ingestion Layer" vertex="1">
+          <mxGeometry height="60" width="300" x="350" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" value="Data Preprocessing&#xa;- Cleaning&#xa;- Feature Engineering&#xa;- Normalization" vertex="1">
+          <mxGeometry height="90" width="340" x="330" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" value="Technical Indicators&#xa;RSI, MACD, EMA, Bollinger Bands" vertex="1">
+          <mxGeometry height="80" width="340" x="330" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;" value="Feature Matrix Builder" vertex="1">
+          <mxGeometry height="60" width="300" x="350" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;" value="LSTM Model&#xa;(Time-Series Prediction)" vertex="1">
+          <mxGeometry height="70" width="300" x="350" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;" value="Monte Carlo Simulation&#xa;(Risk Estimation)" vertex="1">
+          <mxGeometry height="70" width="300" x="350" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="Portfolio Recommendation&#xa;JSON Output" vertex="1">
+          <mxGeometry height="70" width="300" x="350" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-9" edge="1" parent="1" source="69xt6BK8YNQO_I2nBgRy-1" target="69xt6BK8YNQO_I2nBgRy-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-10" edge="1" parent="1" source="69xt6BK8YNQO_I2nBgRy-2" target="69xt6BK8YNQO_I2nBgRy-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-11" edge="1" parent="1" source="69xt6BK8YNQO_I2nBgRy-3" target="69xt6BK8YNQO_I2nBgRy-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-12" edge="1" parent="1" source="69xt6BK8YNQO_I2nBgRy-4" target="69xt6BK8YNQO_I2nBgRy-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-13" edge="1" parent="1" source="69xt6BK8YNQO_I2nBgRy-5" target="69xt6BK8YNQO_I2nBgRy-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-14" edge="1" parent="1" source="69xt6BK8YNQO_I2nBgRy-6" target="69xt6BK8YNQO_I2nBgRy-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="69xt6BK8YNQO_I2nBgRy-15" edge="1" parent="1" source="69xt6BK8YNQO_I2nBgRy-7" target="69xt6BK8YNQO_I2nBgRy-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

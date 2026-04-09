@@ -1,0 +1,52 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.5.3">
+  <diagram name="Sentinel Quant - High Level Architecture" id="BNhsn3OS2r0OVZ2sQ-oX">
+    <mxGraphModel dx="1585" dy="845" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" value="User (Investor)" vertex="1">
+          <mxGeometry height="60" width="200" x="500" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;" value="React Frontend (UI)" vertex="1">
+          <mxGeometry height="60" width="200" x="500" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" value="Backend API (FastAPI/Flask)&#xa;- JWT Authentication&#xa;- Portfolio Controller" vertex="1">
+          <mxGeometry height="90" width="300" x="450" y="240" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" value="NSE Data Ingestion Service" vertex="1">
+          <mxGeometry height="70" width="260" x="100" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" value="LSTM Prediction Engine" vertex="1">
+          <mxGeometry height="70" width="260" x="820" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-7" parent="1" style="shape=cylinder;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" value="PostgreSQL / MongoDB Database" vertex="1">
+          <mxGeometry height="90" width="250" x="500" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-8" edge="1" parent="1" source="9tK5NR17XcXtn5kYy24Z-1" target="9tK5NR17XcXtn5kYy24Z-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-9" edge="1" parent="1" source="9tK5NR17XcXtn5kYy24Z-2" target="9tK5NR17XcXtn5kYy24Z-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-10" edge="1" parent="1" source="9tK5NR17XcXtn5kYy24Z-3" target="9tK5NR17XcXtn5kYy24Z-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-11" edge="1" parent="1" source="9tK5NR17XcXtn5kYy24Z-3" target="9tK5NR17XcXtn5kYy24Z-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-12" edge="1" parent="1" source="9tK5NR17XcXtn5kYy24Z-5" target="9tK5NR17XcXtn5kYy24Z-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-13" edge="1" parent="1" source="9tK5NR17XcXtn5kYy24Z-6" target="9tK5NR17XcXtn5kYy24Z-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-14" edge="1" parent="1" source="9tK5NR17XcXtn5kYy24Z-3" target="9tK5NR17XcXtn5kYy24Z-7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9tK5NR17XcXtn5kYy24Z-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;" value="Technical Indicator Engine&#xa;(RSI, MACD, Bollinger Bands)" vertex="1">
+          <mxGeometry height="70" width="300" x="420" y="400" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
