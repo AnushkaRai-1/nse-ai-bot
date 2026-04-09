@@ -1,0 +1,11 @@
+LOCAL FILE HISTORY SUMMARY (filesystem timestamps, non-git)
+Generated: 2026-04-09 10:45:05
+
+Total files tracked: 209
+
+Files changed by day:
+2026-03-01: 61
+2026-03-02: 4
+2026-03-05: 2
+2026-03-09: 3
+2026-04-09: 139
